@@ -64,8 +64,8 @@ func Test_PeReadDWARF(t *testing.T) {
 	}
 }
 func Test_DWARFReadTypes(t *testing.T) {
-	f, err := elf.Open("fixtures/elf_read_dwarf")
-	// f, err := pe.Open("fixtures/fixtures.exe")
+	// f, err := elf.Open("fixtures/elf_read_dwarf")
+	f, err := pe.Open("D:/project/go/src/github.com/lxt1045/errors/cmd/cmd.exe") // 编译时去掉DWARF: go build --ldflags="-w -s"
 	assert.Nil(t, err)
 
 	dat, err := f.DWARF()

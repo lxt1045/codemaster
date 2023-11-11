@@ -3,6 +3,7 @@ package test
 import (
 	"debug/dwarf"
 	"debug/elf"
+	"debug/pe"
 	"encoding/binary"
 	"fmt"
 	"testing"
@@ -18,6 +19,7 @@ import (
 
 func Test_ElfReadDWARF(t *testing.T) {
 	f, err := elf.Open("fixtures/elf_read_dwarf")
+	// f, err := elf.Open("fixtures/fixtures.exe")
 	assert.Nil(t, err)
 
 	sections := []string{
@@ -39,8 +41,31 @@ func Test_ElfReadDWARF(t *testing.T) {
 	}
 }
 
+func Test_PeReadDWARF(t *testing.T) {
+	f, err := pe.Open("fixtures/fixtures.exe")
+	assert.Nil(t, err)
+
+	sections := []string{
+		"abbrev",
+		"line",
+		"frame",
+		"pubnames",
+		"pubtypes",
+		//"gdb_script",
+		"info",
+		"loc",
+		"ranges",
+	}
+
+	for _, s := range sections {
+		b, err := godwarf.GetDebugSectionPE(f, s)
+		assert.Nil(t, err)
+		t.Logf(".[z]debug_%s data size: %d", s, len(b))
+	}
+}
 func Test_DWARFReadTypes(t *testing.T) {
 	f, err := elf.Open("fixtures/elf_read_dwarf")
+	// f, err := pe.Open("fixtures/fixtures.exe")
 	assert.Nil(t, err)
 
 	dat, err := f.DWARF()
@@ -61,7 +86,8 @@ func Test_DWARFReadTypes(t *testing.T) {
 }
 
 func Test_DWARFReadTypes2(t *testing.T) {
-	f, err := elf.Open("fixtures/elf_read_dwarf")
+	// f, err := elf.Open("fixtures/elf_read_dwarf")
+	f, err := pe.Open("fixtures/fixtures.exe")
 	assert.Nil(t, err)
 
 	dat, err := f.DWARF()
@@ -173,6 +199,7 @@ func Test_DWARFReadFunc(t *testing.T) {
 	assert.Nil(t, err)
 
 	rd := reader.New(dat)
+	i := 0
 	for {
 		die, err := rd.Next()
 		if err != nil {
@@ -184,14 +211,18 @@ func Test_DWARFReadFunc(t *testing.T) {
 		if die.Tag == dwarf.TagSubprogram {
 			fmt.Println(die)
 		}
+		i++
 	}
+	t.Log("i:", i)
 }
 
 func Test_DWARFReadLineNoTable(t *testing.T) {
-	f, err := elf.Open("fixtures/elf_read_dwarf")
+	// f, err := elf.Open("fixtures/elf_read_dwarf")
+	f, err := pe.Open("fixtures/fixtures.exe")
 	assert.Nil(t, err)
 
-	dat, err := godwarf.GetDebugSection(f, "line")
+	// dat, err := godwarf.GetDebugSection(f, "line")
+	dat, err := godwarf.GetDebugSectionPE(f, "line")
 	assert.Nil(t, err)
 
 	lineToPCs := map[int][]uint64{10: nil, 12: nil, 13: nil, 14: nil, 15: nil}
@@ -199,8 +230,11 @@ func Test_DWARFReadLineNoTable(t *testing.T) {
 	debuglines := line.ParseAll(dat, nil, nil, 0, true, 8)
 	fmt.Println(len(debuglines))
 	for _, line := range debuglines {
-		//fmt.Printf("idx-%d\tinst:%v\n", line.Instructions)
-		line.AllPCsForFileLines("/root/dwarftest/dwarf/test/fixtures/elf_read_dwarf.go", lineToPCs)
+		// if len(line.FileNames) > 0 {
+		// 	fmt.Printf("idx-%d\tinst:%v\n", i, line.FileNames[0].Path)
+		// }
+		// line.AllPCsForFileLines("/root/dwarftest/dwarf/test/fixtures/elf_read_dwarf.go", lineToPCs)
+		line.AllPCsForFileLines("D:/project/go/src/github.com/hitzhangjie/codemaster/dwarf/test/fixtures/elf_read_dwarf.go", lineToPCs)
 	}
 
 	for line, pcs := range lineToPCs {

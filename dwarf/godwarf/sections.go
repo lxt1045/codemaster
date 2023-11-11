@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"debug/elf"
+	"debug/pe"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -15,6 +16,22 @@ import (
 // .debug_line, if .debug_line doesn't exist it will try to return the
 // decompressed contents of .zdebug_line.
 func GetDebugSection(f *elf.File, name string) ([]byte, error) {
+	sec := f.Section(".debug_" + name)
+	if sec != nil {
+		return sec.Data()
+	}
+	sec = f.Section(".zdebug_" + name)
+	if sec == nil {
+		return nil, fmt.Errorf("could not find .debug_%s section", name)
+	}
+	b, err := sec.Data()
+	if err != nil {
+		return nil, err
+	}
+	return decompressMaybe(b)
+}
+
+func GetDebugSectionPE(f *pe.File, name string) ([]byte, error) {
 	sec := f.Section(".debug_" + name)
 	if sec != nil {
 		return sec.Data()
